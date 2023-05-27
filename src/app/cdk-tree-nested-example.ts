@@ -189,5 +189,7 @@ export class CdkTreeNestedExample {
   treeControl = new NestedTreeControl<any>((node) => node.children);
   dataSource = new ArrayDataSource([categroyMapper(catalog)]);
   hasChild = (_: number, node: any) =>
-  !!node.children && node.children.length > 0;
+    !!node.children && node.children.length > 0;
+
+  constructor() {}
 }

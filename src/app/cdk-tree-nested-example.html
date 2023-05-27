@@ -3,8 +3,16 @@
     <button mat-icon-button disabled></button>
     {{node.name}}
   </cdk-nested-tree-node>
-  <cdk-nested-tree-node *cdkTreeNodeDef="let node; when: hasChild" class="example-tree-node">
-    <button mat-icon-button [attr.aria-label]="'Toggle ' + node.name" cdkTreeNodeToggle>
+  <cdk-nested-tree-node
+    *cdkTreeNodeDef="let node; when: hasChild"
+    class="example-tree-node"
+  >
+    <button
+      mat-icon-button
+      [attr.aria-label]="'Toggle ' + node.name"
+      cdkTreeNodeToggle
+      [cdkTreeNodeToggleRecursive]="true"
+    >
       <mat-icon class="mat-icon-rtl-mirror">
         {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
       </mat-icon>
