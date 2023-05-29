@@ -6,15 +6,19 @@ import {
 } from '@angular/material/tree';
 import { BehaviorSubject } from 'rxjs';
 
-export class TodoItemNode {
-  children: TodoItemNode[];
-  item: string;
+export class Category {
+  children: Category[];
+  name: string;
+  frontType: string;
+  order: number;
 }
 
-export class TodoItemFlatNode {
-  item: string;
+export class CategoryFlatNode {
+  name: string;
   level: number;
   expandable: boolean;
+  frontType: string;
+  order: number;
 }
 
 /**
@@ -24,56 +28,44 @@ export class TodoItemFlatNode {
  */
 @Injectable()
 export class ChecklistDatabase {
-  dataChange = new BehaviorSubject<TodoItemNode[]>([]);
+  dataChange = new BehaviorSubject<Category[]>([]);
 
-  get data(): TodoItemNode[] {
+  get data(): Category[] {
     return this.dataChange.value;
   }
 
   constructor() {
-    this.initialize();
-  }
-
-  initialize() {
     const data = [
       {
         id: 15461,
-        item: 'Sushi | Category',
+        name: 'Sushi | Category',
         order: 1,
-        parentId: null,
         frontType: 'category',
         children: [
           {
             id: 15462,
-            item: 'Nori | Subcategory',
+            name: 'Nori | Subcategory',
             order: 1,
-            parentId: 15461,
             frontType: 'subCategory',
             children: [
               {
                 id: 159863,
-                itemCategoryId: 15462,
-                item: 'Product #2',
+                name: 'Product #2',
                 order: 2,
-                parentId: null,
                 frontType: 'product',
                 children: [
                   {
                     id: 159864,
-                    itemCategoryId: null,
-                    item: 'Subproduct #4',
+                    name: 'Subproduct #4',
                     order: 3,
-                    parentId: 159863,
                     frontType: 'subProduct',
                   },
                 ],
               },
               {
                 id: 159859,
-                itemCategoryId: 15462,
-                item: 'Product #1',
+                name: 'Product #1',
                 order: 1,
-                parentId: null,
                 frontType: 'product',
                 children: [],
               },
@@ -81,28 +73,22 @@ export class ChecklistDatabase {
           },
           {
             id: 159861,
-            itemCategoryId: 15461,
-            item: 'Product #2',
+            name: 'Product #2',
             order: 1,
-            parentId: null,
             frontType: 'product',
             children: [
               {
                 id: 159862,
-                itemCategoryId: null,
-                item: 'asdas | Subproduct #1',
+                name: 'asdas | Subproduct #1',
                 order: 2,
-                parentId: 159861,
                 frontType: 'subProduct',
               },
             ],
           },
           {
             id: 159860,
-            itemCategoryId: 15461,
-            item: 'Product #1',
+            name: 'Product #1',
             order: 2,
-            parentId: null,
             frontType: 'product',
             children: [],
           },
@@ -114,19 +100,19 @@ export class ChecklistDatabase {
   }
 
   /** Add an item to to-do list */
-  insertItem(parent: TodoItemNode, name: string): TodoItemNode {
+  insertItem(parent: Category, name: string): Category {
     if (!parent.children) {
       parent.children = [];
     }
-    const newItem = { item: name } as TodoItemNode;
+    const newItem = { name } as Category;
     parent.children.push(newItem);
     this.dataChange.next(this.data);
     return newItem;
   }
 
-  insertItemAbove(node: TodoItemNode, name: string): TodoItemNode {
+  insertItemAbove(node: Category, name: string): Category {
     const parentNode = this.getParentFromNodes(node);
-    const newItem = { item: name } as TodoItemNode;
+    const newItem = { name } as Category;
     if (parentNode != null) {
       parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
     } else {
@@ -136,9 +122,9 @@ export class ChecklistDatabase {
     return newItem;
   }
 
-  insertItemBelow(node: TodoItemNode, name: string): TodoItemNode {
+  insertItemBelow(node: Category, name: string): Category {
     const parentNode = this.getParentFromNodes(node);
-    const newItem = { item: name } as TodoItemNode;
+    const newItem = { name } as Category;
     if (parentNode != null) {
       parentNode.children.splice(
         parentNode.children.indexOf(node) + 1,
@@ -152,7 +138,7 @@ export class ChecklistDatabase {
     return newItem;
   }
 
-  getParentFromNodes(node: TodoItemNode): TodoItemNode | null {
+  getParentFromNodes(node: Category): Category | null {
     for (let i = 0; i < this.data.length; ++i) {
       const currentRoot = this.data[i];
       const parent = this.getParent(currentRoot, node);
@@ -163,10 +149,7 @@ export class ChecklistDatabase {
     return null;
   }
 
-  getParent(
-    currentRoot: TodoItemNode,
-    node: TodoItemNode
-  ): TodoItemNode | null {
+  getParent(currentRoot: Category, node: Category): Category | null {
     if (currentRoot.children && currentRoot.children.length > 0) {
       for (let i = 0; i < currentRoot.children.length; ++i) {
         const child = currentRoot.children[i];
@@ -184,13 +167,13 @@ export class ChecklistDatabase {
     return null;
   }
 
-  deleteItem(node: TodoItemNode) {
+  deleteItem(node: Category) {
     this.deleteNode(this.data, node);
     this.dataChange.next(this.data);
   }
 
-  copyPasteItem(from: TodoItemNode, to: TodoItemNode): TodoItemNode {
-    const newItem = this.insertItem(to, from.item);
+  copyPasteItem(from: Category, to: Category): Category {
+    const newItem = this.insertItem(to, from.name);
     if (from.children) {
       from.children.forEach((child) => {
         this.copyPasteItem(child, newItem);
@@ -199,8 +182,8 @@ export class ChecklistDatabase {
     return newItem;
   }
 
-  copyPasteItemAbove(from: TodoItemNode, to: TodoItemNode): TodoItemNode {
-    const newItem = this.insertItemAbove(to, from.item);
+  copyPasteItemAbove(from: Category, to: Category): Category {
+    const newItem = this.insertItemAbove(to, from.name);
     if (from.children) {
       from.children.forEach((child) => {
         this.copyPasteItem(child, newItem);
@@ -209,8 +192,8 @@ export class ChecklistDatabase {
     return newItem;
   }
 
-  copyPasteItemBelow(from: TodoItemNode, to: TodoItemNode): TodoItemNode {
-    const newItem = this.insertItemBelow(to, from.item);
+  copyPasteItemBelow(from: Category, to: Category): Category {
+    const newItem = this.insertItemBelow(to, from.name);
     if (from.children) {
       from.children.forEach((child) => {
         this.copyPasteItem(child, newItem);
@@ -219,7 +202,7 @@ export class ChecklistDatabase {
     return newItem;
   }
 
-  deleteNode(nodes: TodoItemNode[], nodeToDelete: TodoItemNode) {
+  deleteNode(nodes: Category[], nodeToDelete: Category) {
     const index = nodes.indexOf(nodeToDelete, 0);
     if (index > -1) {
       nodes.splice(index, 1);
@@ -241,16 +224,16 @@ export class ChecklistDatabase {
 })
 export class CdkTreeNestedExample {
   /** Map from flat node to nested node. This helps us finding the nested node to be modified */
-  flatNodeMap = new Map<TodoItemFlatNode, TodoItemNode>();
+  flatNodeMap = new Map<CategoryFlatNode, Category>();
 
   /** Map from nested node to flattened node. This helps us to keep the same object for selection */
-  nestedNodeMap = new Map<TodoItemNode, TodoItemFlatNode>();
+  nestedNodeMap = new Map<Category, CategoryFlatNode>();
 
-  treeControl: FlatTreeControl<TodoItemFlatNode>;
+  treeControl: FlatTreeControl<CategoryFlatNode>;
 
-  treeFlattener: MatTreeFlattener<TodoItemNode, TodoItemFlatNode>;
+  treeFlattener: MatTreeFlattener<Category, CategoryFlatNode>;
 
-  dataSource: MatTreeFlatDataSource<TodoItemNode, TodoItemFlatNode>;
+  dataSource: MatTreeFlatDataSource<Category, CategoryFlatNode>;
   /* Drag and drop */
   dragNode: any;
   dragNodeExpandOverWaitTimeMs = 300;
@@ -266,7 +249,7 @@ export class CdkTreeNestedExample {
       this.isExpandable,
       this.getChildren
     );
-    this.treeControl = new FlatTreeControl<TodoItemFlatNode>(
+    this.treeControl = new FlatTreeControl<CategoryFlatNode>(
       this.getLevel,
       this.isExpandable
     );
@@ -282,27 +265,28 @@ export class CdkTreeNestedExample {
     });
   }
 
-  getLevel = (node: TodoItemFlatNode) => node.level;
+  getLevel = (node: CategoryFlatNode) => node.level;
 
-  isExpandable = (node: TodoItemFlatNode) => node.expandable;
+  isExpandable = (node: CategoryFlatNode) => node.expandable;
 
-  getChildren = (node: TodoItemNode): TodoItemNode[] => node.children;
+  getChildren = (node: Category): Category[] => node.children;
 
-  hasChild = (_: number, _nodeData: TodoItemFlatNode) => _nodeData.expandable;
+  hasChild = (_: number, _nodeData: CategoryFlatNode) => _nodeData.expandable;
 
   /**
    * Transformer to convert nested node to flat node. Record the nodes in maps for later use.
    */
-  transformer = (node: TodoItemNode, level: number) => {
+  transformer = (node: Category, level: number) => {
+    console.log(node, level);
     const existingNode = this.nestedNodeMap.get(node);
     const flatNode =
-      existingNode && existingNode.item === node.item
+      existingNode && existingNode.name === node.name
         ? existingNode
-        : new TodoItemFlatNode();
-    flatNode.item = node.item;
+        : new CategoryFlatNode();
+    flatNode.name = node.name;
     flatNode.level = level;
     flatNode.expandable = node.children && node.children.length > 0;
-    (flatNode as any).frontType = (node as any).frontType;
+    flatNode.frontType = node.frontType;
     this.flatNodeMap.set(flatNode, node);
     this.nestedNodeMap.set(node, flatNode);
     return flatNode;
@@ -347,7 +331,7 @@ export class CdkTreeNestedExample {
 
     console.log(node, this.dragNodeExpandOverArea);
     if (node !== this.dragNode) {
-      let newItem: TodoItemNode;
+      let newItem: Category;
       if (this.dragNodeExpandOverArea === 'above') {
         newItem = this.database.copyPasteItemAbove(
           this.flatNodeMap.get(this.dragNode) as any,

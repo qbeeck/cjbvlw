@@ -20,7 +20,7 @@
       (dragover)="handleDragOver($event, node)"
       (drop)="handleDrop($event, node)"
       (dragend)="handleDragEnd()"
-      >{{ node.item }}</span
+      >{{ node.name }}</span
     >
   </mat-tree-node>
 
@@ -34,6 +34,7 @@
         {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
       </mat-icon>
     </button>
+
     <span
       [ngClass]="{
         'drop-above':
@@ -48,7 +49,7 @@
       (dragover)="handleDragOver($event, node)"
       (drop)="handleDrop($event, node)"
       (dragend)="handleDragEnd()"
-      >{{ node.item }}</span
+      >{{ node.name }}</span
     >
   </mat-tree-node>
 </mat-tree>
