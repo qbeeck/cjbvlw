@@ -1,25 +1,77 @@
-<cdk-tree [dataSource]="dataSource" [treeControl]="treeControl">
-  <cdk-nested-tree-node *cdkTreeNodeDef="let node" class="example-tree-node">
+<cdk-tree cdkDropList [dataSource]="dataSource" [treeControl]="treeControl">
+  <cdk-nested-tree-node
+    cdkDrag
+    *cdkTreeNodeDef="let node"
+    class="example-tree-node"
+  >
     <button mat-icon-button disabled></button>
     {{node.name}}
   </cdk-nested-tree-node>
+
   <cdk-nested-tree-node
     *cdkTreeNodeDef="let node; when: hasChild"
+    cdkDrag
     class="example-tree-node"
   >
-    <button
-      mat-icon-button
-      [attr.aria-label]="'Toggle ' + node.name"
-      cdkTreeNodeToggle
-      [cdkTreeNodeToggleRecursive]="true"
-    >
-      <mat-icon class="mat-icon-rtl-mirror">
-        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
-      </mat-icon>
-    </button>
-    {{node.name}}
-    <div [class.example-tree-invisible]="!treeControl.isExpanded(node)">
-      <ng-container cdkTreeNodeOutlet></ng-container>
-    </div>
+    <ng-container>
+      <button
+        mat-icon-button
+        [attr.aria-label]="'Toggle ' + node.name"
+        cdkTreeNodeToggle
+        [cdkTreeNodeToggleRecursive]="true"
+      >
+        <mat-icon class="mat-icon-rtl-mirror">
+          {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+        </mat-icon>
+      </button>
+      {{node.name}}
+      <div [class.example-tree-invisible]="!treeControl.isExpanded(node)">
+        <ng-container cdkTreeNodeOutlet></ng-container>
+      </div>
+    </ng-container>
   </cdk-nested-tree-node>
 </cdk-tree>
+
+<hr />
+
+<mat-list>
+  <ng-container *ngFor="let category of catalog">
+    <mat-list-item>{{ category.name }}</mat-list-item>
+
+    <mat-list style="margin-left: 30px">
+      <ng-container
+        *ngFor="let subCat of category.childrenItemCategories"
+        [ngTemplateOutlet]="subCategory"
+        [ngTemplateOutletContext]="{ $implicit: subCat }"
+      ></ng-container>
+
+      <ng-container
+        *ngFor="let prod of category.items"
+        [ngTemplateOutlet]="product"
+        [ngTemplateOutletContext]="{ $implicit: prod }"
+      ></ng-container>
+    </mat-list>
+  </ng-container>
+</mat-list>
+
+<ng-template #subCategory let-subCategory>
+  <mat-list-item>{{ subCategory.name }}</mat-list-item>
+
+  <mat-list style="margin-left: 30px">
+    <ng-container
+      *ngFor="let prod of subCategory.items"
+      [ngTemplateOutlet]="product"
+      [ngTemplateOutletContext]="{ $implicit: prod }"
+    ></ng-container>
+  </mat-list>
+</ng-template>
+
+<ng-template #product let-product>
+  <mat-list-item>{{ product.name }}</mat-list-item>
+
+  <mat-list style="margin-left: 30px">
+    <ng-container *ngFor="let subProduct of product.children">
+      <mat-list-item>{{ subProduct.name }}</mat-list-item>
+    </ng-container>
+  </mat-list>
+</ng-template>

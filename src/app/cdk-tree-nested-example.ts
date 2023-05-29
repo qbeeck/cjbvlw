@@ -28,7 +28,7 @@ interface Item {
   children?: Item[];
 }
 
-const catalog: Category = {
+const category: Category = {
   id: 15461,
   name: 'Sushi | Category',
   order: 1,
@@ -153,8 +153,6 @@ const categroyMapper = (category: Category) => {
   };
 };
 
-console.log(categroyMapper(catalog));
-
 @Component({
   selector: 'cdk-tree-nested-example',
   templateUrl: 'cdk-tree-nested-example.html',
@@ -162,7 +160,9 @@ console.log(categroyMapper(catalog));
 })
 export class CdkTreeNestedExample {
   treeControl = new NestedTreeControl<any>((node) => node.children);
-  dataSource = new ArrayDataSource([categroyMapper(catalog)]);
+  dataSource = new ArrayDataSource([categroyMapper(category)]);
   hasChild = (_: number, node: any) =>
     !!node.children && node.children.length > 0;
+
+  catalog = [category];
 }
