@@ -4,9 +4,11 @@ import {
   MatTreeFlatDataSource,
   MatTreeFlattener,
 } from '@angular/material/tree';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 
 import { TreeItem, TreeItemFlatNode } from './interfaces';
+
+type DragNodePosition = 'above' | 'below' | 'center';
 
 @Component({
   selector: 'app-tree',
@@ -19,15 +21,18 @@ export class CdkTreeNestedExample {
   @Output() readonly catalogChanges = new EventEmitter<TreeItem[]>();
 
   private readonly flatNodeMap = new Map<TreeItemFlatNode, TreeItem>();
-
   private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
   private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
+  protected dragNode: any;
+  protected readonly dragNodeExpandOverWaitTimeMs = 300;
+  protected dragNodeExpandOverNode: TreeItemFlatNode | null;
+  protected dragNodeExpandOverTime: number;
+  protected dragNodeExpandOverArea: DragNodePosition;
 
   protected treeControl = new FlatTreeControl<TreeItemFlatNode>(
     (node) => node.level,
     (node) => node.expandable
   );
-
   protected treeFlattener = new MatTreeFlattener<TreeItem, TreeItemFlatNode>(
     (node, level) => {
       const existingNode = this.nestedNodeMap.get(node);
@@ -55,39 +60,42 @@ export class CdkTreeNestedExample {
     this.treeControl,
     this.treeFlattener
   );
+
+  protected hasChild = (_: number, _nodeData: TreeItemFlatNode) =>
+    _nodeData.expandable;
   /* Drag and drop */
-  protected dragNode: any;
-  protected dragNodeExpandOverWaitTimeMs = 300;
-  protected dragNodeExpandOverNode: any;
-  protected dragNodeExpandOverTime: number;
-  protected dragNodeExpandOverArea: string;
+
+  private readonly _destroy$ = new Subject<void>();
 
   ngOnInit(): void {
     this.dataChange.next(this.catalog);
 
-    this.dataChange.subscribe((data) => {
+    this.dataChange.pipe(takeUntil(this._destroy$)).subscribe((data) => {
       this.dataSource.data = data;
 
       this.treeControl.expandAll();
     });
   }
 
-  protected hasChild = (_: number, _nodeData: TreeItemFlatNode) =>
-    _nodeData.expandable;
+  ngOnDestroy(): void {
+    this._destroy$.next();
+    this._destroy$.complete();
+  }
 
-  protected handleDragStart(event: any, node: any) {
+  protected handleDragStart(node: TreeItemFlatNode) {
     this.dragNode = node;
     this.treeControl.collapse(node);
   }
 
-  protected handleDragOver(event: any, node: any) {
+  protected handleDragOver(event: DragEvent, node: TreeItemFlatNode) {
     event.preventDefault();
 
-    // Handle node expand
     if (node === this.dragNodeExpandOverNode) {
       if (this.dragNode !== node && !this.treeControl.isExpanded(node)) {
+        const currentTime = new Date().getTime();
+
         if (
-          new Date().getTime() - this.dragNodeExpandOverTime >
+          currentTime - this.dragNodeExpandOverTime >
           this.dragNodeExpandOverWaitTimeMs
         ) {
           this.treeControl.expand(node);
@@ -98,39 +106,44 @@ export class CdkTreeNestedExample {
       this.dragNodeExpandOverTime = new Date().getTime();
     }
 
-    // Handle drag area
-    const percentageY = event.offsetY / event.target.clientHeight;
-    if (percentageY < 0.25) {
-      this.dragNodeExpandOverArea = 'above';
-    } else if (percentageY > 0.75) {
-      this.dragNodeExpandOverArea = 'below';
-    } else {
-      this.dragNodeExpandOverArea = 'center';
+    const target = event.target as HTMLInputElement;
+    const clientHeight = target.clientHeight;
+    const offsetY = event.offsetY;
+    const percentageY = offsetY / clientHeight;
+
+    switch (true) {
+      case percentageY < 0.25:
+        this.dragNodeExpandOverArea = 'above';
+        break;
+      case percentageY > 0.75:
+        this.dragNodeExpandOverArea = 'below';
+        break;
+      default:
+        this.dragNodeExpandOverArea = 'center';
+        break;
     }
   }
 
-  protected handleDrop(event: any, node: any) {
+  protected handleDrop(event: DragEvent, node: TreeItemFlatNode) {
     event.preventDefault();
 
-    console.log(node, this.dragNodeExpandOverArea);
     if (node !== this.dragNode) {
       let newItem: TreeItem;
-      if (this.dragNodeExpandOverArea === 'above') {
-        newItem = this.copyPasteItemAbove(
-          this.flatNodeMap.get(this.dragNode) as any,
-          this.flatNodeMap.get(node) as any
-        );
-      } else if (this.dragNodeExpandOverArea === 'below') {
-        newItem = this.copyPasteItemBelow(
-          this.flatNodeMap.get(this.dragNode) as any,
-          this.flatNodeMap.get(node) as any
-        );
-      } else {
-        newItem = this.copyPasteItem(
-          this.flatNodeMap.get(this.dragNode) as any,
-          this.flatNodeMap.get(node) as any
-        );
+
+      const from = this.flatNodeMap.get(this.dragNode) as TreeItem;
+      const to = this.flatNodeMap.get(node) as TreeItem;
+
+      switch (this.dragNodeExpandOverArea) {
+        case 'above':
+          newItem = this.copyPasteItemByPosition(from, to, 'above');
+          break;
+        case 'below':
+          newItem = this.copyPasteItemByPosition(from, to, 'below');
+          break;
+        default:
+          newItem = this.copyPasteItemByPosition(from, to, 'center');
       }
+
       this.deleteItem(this.flatNodeMap.get(this.dragNode) as any);
       this.treeControl.expandDescendants(
         this.nestedNodeMap.get(newItem) as any
@@ -156,8 +169,10 @@ export class CdkTreeNestedExample {
     if (!parent.children) {
       parent.children = [];
     }
+
     const newItem = { name } as TreeItem;
     parent.children.push(newItem);
+
     this.dataChange.next(this.data);
     return newItem;
   }
@@ -165,11 +180,13 @@ export class CdkTreeNestedExample {
   private insertItemAbove(node: TreeItem, name: string): TreeItem {
     const parentNode = this.getParentFromNodes(node);
     const newItem = { name } as TreeItem;
+
     if (parentNode != null) {
       parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
     } else {
       this.data.splice(this.data.indexOf(node), 0, newItem);
     }
+
     this.dataChange.next(this.data);
     return newItem;
   }
@@ -177,6 +194,7 @@ export class CdkTreeNestedExample {
   private insertItemBelow(node: TreeItem, name: string): TreeItem {
     const parentNode = this.getParentFromNodes(node);
     const newItem = { name } as TreeItem;
+
     if (parentNode != null) {
       parentNode.children.splice(
         parentNode.children.indexOf(node) + 1,
@@ -186,6 +204,7 @@ export class CdkTreeNestedExample {
     } else {
       this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
     }
+
     this.dataChange.next(this.data);
     return newItem;
   }
@@ -194,24 +213,26 @@ export class CdkTreeNestedExample {
     for (let i = 0; i < this.data.length; ++i) {
       const currentRoot = this.data[i];
       const parent = this.getParent(currentRoot, node);
-      if (parent != null) {
-        return parent;
-      }
+
+      if (parent != null) return parent;
     }
+
     return null;
   }
 
   private getParent(currentRoot: TreeItem, node: TreeItem): TreeItem | null {
-    if (currentRoot.children && currentRoot.children.length > 0) {
-      for (let i = 0; i < currentRoot.children.length; ++i) {
-        const child = currentRoot.children[i];
-        if (child === node) {
-          return currentRoot;
-        } else if (child.children && child.children.length > 0) {
-          const parent = this.getParent(child, node);
-          if (parent != null) {
-            return parent;
-          }
+    const currentRootChildren = currentRoot.children;
+
+    if (currentRootChildren && currentRootChildren.length > 0) {
+      for (let i = 0; i < currentRootChildren.length; ++i) {
+        const children = currentRootChildren[i];
+
+        if (children === node) return currentRoot;
+
+        if (children.children && children.children.length > 0) {
+          const parent = this.getParent(children, node);
+
+          if (parent !== null) return parent;
         }
       }
     }
@@ -224,38 +245,36 @@ export class CdkTreeNestedExample {
     this.dataChange.next(this.data);
   }
 
-  private copyPasteItem(from: TreeItem, to: TreeItem): TreeItem {
-    const newItem = this.insertItem(to, from.name);
-    if (from.children) {
-      from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
-      });
-    }
-    return newItem;
-  }
+  private copyPasteItemByPosition(
+    from: TreeItem,
+    to: TreeItem,
+    position: DragNodePosition
+  ): TreeItem {
+    let newItem: TreeItem;
 
-  private copyPasteItemAbove(from: TreeItem, to: TreeItem): TreeItem {
-    const newItem = this.insertItemAbove(to, from.name);
-    if (from.children) {
-      from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
-      });
+    switch (position) {
+      case 'above':
+        newItem = this.insertItemAbove(to, from.name);
+        break;
+      case 'below':
+        newItem = this.insertItemBelow(to, from.name);
+        break;
+      default:
+        newItem = this.insertItem(to, from.name);
     }
-    return newItem;
-  }
 
-  private copyPasteItemBelow(from: TreeItem, to: TreeItem): TreeItem {
-    const newItem = this.insertItemBelow(to, from.name);
     if (from.children) {
       from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
+        this.copyPasteItemByPosition(child, newItem, 'center');
       });
     }
+
     return newItem;
   }
 
   private deleteNode(nodes: TreeItem[], nodeToDelete: TreeItem) {
     const index = nodes.indexOf(nodeToDelete, 0);
+
     if (index > -1) {
       nodes.splice(index, 1);
     } else {
