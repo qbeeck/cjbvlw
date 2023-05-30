@@ -1,8 +1,18 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  TrackByFunction,
+} from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import {
   MatTreeFlatDataSource,
   MatTreeFlattener,
+  MatTreeModule,
 } from '@angular/material/tree';
 import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 
@@ -12,6 +22,8 @@ type DragNodePosition = 'above' | 'below' | 'center';
 
 @Component({
   selector: 'app-tree',
+  standalone: true,
+  imports: [MatTreeModule, MatIconModule, MatButtonModule, CommonModule],
   templateUrl: './cdk-tree-nested-example.html',
   styleUrls: ['./cdk-tree-nested-example.css'],
 })
@@ -19,15 +31,6 @@ export class CdkTreeNestedExample {
   @Input() catalog: TreeItem[];
 
   @Output() readonly catalogChanges = new EventEmitter<TreeItem[]>();
-
-  private readonly flatNodeMap = new Map<TreeItemFlatNode, TreeItem>();
-  private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
-  private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
-  protected dragNode: TreeItemFlatNode | null = null;
-  protected readonly dragNodeExpandOverWaitTimeMs = 300;
-  protected dragNodeExpandOverNode: TreeItemFlatNode | null;
-  protected dragNodeExpandOverTime: number;
-  protected dragNodeExpandOverArea: DragNodePosition;
 
   protected readonly treeControl = new FlatTreeControl<TreeItemFlatNode>(
     (node) => node.level,
@@ -44,6 +47,7 @@ export class CdkTreeNestedExample {
         existingNode && existingNode.name === node.name
           ? existingNode
           : new TreeItemFlatNode();
+      flatNode.id = node.id;
       flatNode.name = node.name;
       flatNode.level = level;
       flatNode.expandable = node.children && node.children.length > 0;
@@ -58,16 +62,26 @@ export class CdkTreeNestedExample {
     (node) => node.expandable,
     (node) => node.children
   );
-
   protected readonly dataSource = new MatTreeFlatDataSource(
     this.treeControl,
     this.treeFlattener
   );
-
+  protected dragNodeExpandOverNode: TreeItemFlatNode | null;
+  protected dragNodeExpandOverArea: DragNodePosition;
   protected readonly hasChild = (_: number, node: TreeItemFlatNode) =>
     node.expandable;
 
+  private readonly flatNodeMap = new Map<TreeItemFlatNode, TreeItem>();
+  private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
+  private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
+  private dragNode: TreeItemFlatNode | null = null;
+  private readonly dragNodeExpandOverWaitTimeMs = 300;
+  private dragNodeExpandOverTime: number;
+
   private readonly _destroy$ = new Subject<void>();
+
+  protected readonly trackBy: TrackByFunction<TreeItemFlatNode> = (i, item) =>
+    item.id;
 
   ngOnInit(): void {
     this.dataChange.next(this.catalog);
@@ -147,9 +161,9 @@ export class CdkTreeNestedExample {
           newItem = this.copyPasteItemByPosition(from, to, 'center');
       }
 
-      this.deleteItem(this.flatNodeMap.get(this.dragNode) as any);
+      this.deleteItem(this.flatNodeMap.get(this.dragNode) as TreeItem);
       this.treeControl.expandDescendants(
-        this.nestedNodeMap.get(newItem) as any
+        this.nestedNodeMap.get(newItem) as TreeItemFlatNode
       );
     }
 
@@ -168,21 +182,21 @@ export class CdkTreeNestedExample {
     return this.dataChange.value;
   }
 
-  private insertItem(parent: TreeItem, name: string): TreeItem {
+  private insertItem(parent: TreeItem, from: TreeItem): TreeItem {
     if (!parent.children) {
       parent.children = [];
     }
 
-    const newItem = { name } as TreeItem;
+    const newItem: TreeItem = { ...from, children: [] };
     parent.children.push(newItem);
 
     this.dataChange.next(this.data);
     return newItem;
   }
 
-  private insertItemAbove(node: TreeItem, name: string): TreeItem {
+  private insertItemAbove(node: TreeItem, from: TreeItem): TreeItem {
     const parentNode = this.getParentFromNodes(node);
-    const newItem = { name } as TreeItem;
+    const newItem: TreeItem = { ...from, children: [] };
 
     if (parentNode != null) {
       parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
@@ -194,9 +208,9 @@ export class CdkTreeNestedExample {
     return newItem;
   }
 
-  private insertItemBelow(node: TreeItem, name: string): TreeItem {
+  private insertItemBelow(node: TreeItem, from: TreeItem): TreeItem {
     const parentNode = this.getParentFromNodes(node);
-    const newItem = { name } as TreeItem;
+    const newItem: TreeItem = { ...from, children: [] };
 
     if (parentNode != null) {
       parentNode.children.splice(
@@ -257,13 +271,13 @@ export class CdkTreeNestedExample {
 
     switch (position) {
       case 'above':
-        newItem = this.insertItemAbove(to, from.name);
+        newItem = this.insertItemAbove(to, from);
         break;
       case 'below':
-        newItem = this.insertItemBelow(to, from.name);
+        newItem = this.insertItemBelow(to, from);
         break;
       default:
-        newItem = this.insertItem(to, from.name);
+        newItem = this.insertItem(to, from);
     }
 
     if (from.children) {

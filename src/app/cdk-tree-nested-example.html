@@ -1,4 +1,8 @@
-<mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+<mat-tree
+  [dataSource]="dataSource"
+  [trackBy]="trackBy"
+  [treeControl]="treeControl"
+>
   <mat-tree-node
     *matTreeNodeDef="let node"
     matTreeNodeToggle

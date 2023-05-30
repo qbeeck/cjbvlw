@@ -1,4 +1,5 @@
 export class TreeItem {
+  id: number;
   children: TreeItem[];
   name: string;
   frontType: string;
@@ -6,6 +7,7 @@ export class TreeItem {
 }
 
 export class TreeItemFlatNode {
+  id: number;
   name: string;
   level: number;
   expandable: boolean;
