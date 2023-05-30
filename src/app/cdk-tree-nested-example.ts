@@ -190,7 +190,7 @@ export class CdkTreeNestedExample {
     const newItem: TreeItem = { ...from, children: [] };
     parent.children.push(newItem);
 
-    this.dataChange.next(this.data);
+    this.onCatalogChanges(this.data);
     return newItem;
   }
 
@@ -204,7 +204,7 @@ export class CdkTreeNestedExample {
       this.data.splice(this.data.indexOf(node), 0, newItem);
     }
 
-    this.dataChange.next(this.data);
+    this.onCatalogChanges(this.data);
     return newItem;
   }
 
@@ -222,7 +222,7 @@ export class CdkTreeNestedExample {
       this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
     }
 
-    this.dataChange.next(this.data);
+    this.onCatalogChanges(this.data);
     return newItem;
   }
 
@@ -259,7 +259,7 @@ export class CdkTreeNestedExample {
 
   private deleteItem(node: TreeItem) {
     this.deleteNode(this.data, node);
-    this.dataChange.next(this.data);
+    this.onCatalogChanges(this.data);
   }
 
   private copyPasteItemByPosition(
@@ -301,5 +301,10 @@ export class CdkTreeNestedExample {
         }
       });
     }
+  }
+
+  private onCatalogChanges(tree: TreeItem[]): void {
+    this.dataChange.next(tree);
+    this.catalogChanges.emit(tree);
   }
 }

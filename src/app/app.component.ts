@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
+import { TreeItem } from './interfaces';
 
 @Component({
   selector: 'app-root',
-  template: `<app-tree [catalog]="catalog"></app-tree>`,
+  template: `<app-tree [catalog]="catalog" (catalogChanges)="onCatalogChanges($event)"></app-tree>`,
 })
 export class AppComponent {
   catalog = [
@@ -65,4 +66,8 @@ export class AppComponent {
       ],
     },
   ];
+
+  onCatalogChanges(tree: TreeItem[]): void {
+    console.log(tree);
+  }
 }
