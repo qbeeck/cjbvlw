@@ -43,7 +43,7 @@
         'drop-center':
           dragNodeExpandOverArea === 'center' && dragNodeExpandOverNode === node
       }"
-    [draggable]="node.frontType === 'product' || node.frontType === 'subProduct'"
+    [draggable]="node.frontType !== 'subCategory'"
     (dragstart)="handleDragStart(node)"
     (dragover)="handleDragOver($event, node)"
     (drop)="handleDrop($event, node)"
