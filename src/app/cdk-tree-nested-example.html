@@ -36,12 +36,12 @@
 <ng-template #item let-node>
   <span
     [ngClass]="{
-        'drop-above':
-          dragNodeExpandOverArea === 'above' && dragNodeExpandOverNode === node,
-        'drop-below':
-          dragNodeExpandOverArea === 'below' && dragNodeExpandOverNode === node,
-        'drop-center':
-          dragNodeExpandOverArea === 'center' && dragNodeExpandOverNode === node
+      'drop-above':
+        dragNodeExpandOverArea === 'above' && dragNodeExpandOverNode === node,
+      'drop-below':
+        dragNodeExpandOverArea === 'below' && dragNodeExpandOverNode === node,
+      'drop-center':
+        dragNodeExpandOverArea === 'center' && dragNodeExpandOverNode === node
       }"
     [draggable]="node.frontType !== 'subCategory'"
     (dragstart)="handleDragStart(node)"
