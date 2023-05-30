@@ -81,7 +81,7 @@ export class CdkTreeNestedExample {
 
   private readonly _destroy$ = new Subject<void>();
 
-  protected readonly trackBy: TrackByFunction<TreeItemFlatNode> = (i, item) =>
+  protected readonly trackBy: TrackByFunction<TreeItemFlatNode> = (_, item) =>
     item.id;
 
   ngOnInit(): void {
@@ -145,27 +145,39 @@ export class CdkTreeNestedExample {
   protected handleDrop(event: DragEvent, node: TreeItemFlatNode) {
     event.preventDefault();
 
+    // subproduct -> product = subproduct
+    // product -> product = subproduct
+
+    // category -> product = not allow
+    // category -> subProduct = not allow
+    // product -> subProduct = not allow
+
     if (this.dragNode && node !== this.dragNode) {
       let newItem: TreeItem;
 
-      const from = this.flatNodeMap.get(this.dragNode) as TreeItem;
-      const to = this.flatNodeMap.get(node) as TreeItem;
+      const from = this.flatNodeMap.get(this.dragNode);
+      const to = this.flatNodeMap.get(node);
+
+      if (!from || !to) return;
 
       switch (this.dragNodeExpandOverArea) {
         case 'above':
-          newItem = this.copyPasteItemByPosition(from, to, 'above');
+          newItem = this.copyPasteItem(from, to, 'above');
           break;
         case 'below':
-          newItem = this.copyPasteItemByPosition(from, to, 'below');
+          newItem = this.copyPasteItem(from, to, 'below');
           break;
         default:
-          newItem = this.copyPasteItemByPosition(from, to, 'center');
+          newItem = this.copyPasteItem(from, to, 'center');
       }
 
       this.deleteItem(this.flatNodeMap.get(this.dragNode) as TreeItem);
-      this.treeControl.expandDescendants(
-        this.nestedNodeMap.get(newItem) as TreeItemFlatNode
-      );
+
+      const newItemFlatNode = this.nestedNodeMap.get(newItem);
+
+      if (newItemFlatNode) {
+        this.treeControl.expandDescendants(newItemFlatNode);
+      }
 
       this.catalogChanges.emit(this.data);
     }
@@ -265,7 +277,7 @@ export class CdkTreeNestedExample {
     this.dataChange.next(this.data);
   }
 
-  private copyPasteItemByPosition(
+  private copyPasteItem(
     from: TreeItem,
     to: TreeItem,
     position: DragNodePosition
@@ -284,8 +296,8 @@ export class CdkTreeNestedExample {
     }
 
     if (from.children) {
-      from.children.forEach((child, index) => {
-        this.copyPasteItemByPosition(child, newItem, 'center');
+      from.children.forEach((child) => {
+        this.copyPasteItem(child, newItem, 'center');
       });
     }
 
