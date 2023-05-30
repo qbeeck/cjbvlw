@@ -52,6 +52,7 @@ export class CdkTreeNestedExample {
       flatNode.level = level;
       flatNode.expandable = node.children && node.children.length > 0;
       flatNode.frontType = node.frontType;
+      flatNode.order = node.order;
 
       this.flatNodeMap.set(flatNode, node);
       this.nestedNodeMap.set(node, flatNode);
@@ -165,6 +166,8 @@ export class CdkTreeNestedExample {
       this.treeControl.expandDescendants(
         this.nestedNodeMap.get(newItem) as TreeItemFlatNode
       );
+
+      this.catalogChanges.emit(this.data);
     }
 
     this.dragNode = null;
@@ -190,7 +193,11 @@ export class CdkTreeNestedExample {
     const newItem: TreeItem = { ...from, children: [] };
     parent.children.push(newItem);
 
-    this.onCatalogChanges(this.data);
+    parent.children.forEach((node, index) => {
+      node.order = index + 1;
+    });
+
+    this.dataChange.next(this.data);
     return newItem;
   }
 
@@ -200,17 +207,23 @@ export class CdkTreeNestedExample {
 
     if (parentNode != null) {
       parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
+
+      parentNode.children.forEach((node, index) => {
+        node.order = index + 1;
+      });
     } else {
       this.data.splice(this.data.indexOf(node), 0, newItem);
     }
 
-    this.onCatalogChanges(this.data);
+    this.dataChange.next(this.data);
     return newItem;
   }
 
   private insertItemBelow(node: TreeItem, from: TreeItem): TreeItem {
     const parentNode = this.getParentFromNodes(node);
     const newItem: TreeItem = { ...from, children: [] };
+    console.log(parentNode);
+
 
     if (parentNode != null) {
       parentNode.children.splice(
@@ -218,11 +231,15 @@ export class CdkTreeNestedExample {
         0,
         newItem
       );
+
+      parentNode.children.forEach((node, index) => {
+        node.order = index + 1;
+      });
     } else {
       this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
     }
 
-    this.onCatalogChanges(this.data);
+    this.dataChange.next(this.data);
     return newItem;
   }
 
@@ -259,7 +276,7 @@ export class CdkTreeNestedExample {
 
   private deleteItem(node: TreeItem) {
     this.deleteNode(this.data, node);
-    this.onCatalogChanges(this.data);
+    this.dataChange.next(this.data);
   }
 
   private copyPasteItemByPosition(
@@ -281,7 +298,7 @@ export class CdkTreeNestedExample {
     }
 
     if (from.children) {
-      from.children.forEach((child) => {
+      from.children.forEach((child, index) => {
         this.copyPasteItemByPosition(child, newItem, 'center');
       });
     }
@@ -301,10 +318,5 @@ export class CdkTreeNestedExample {
         }
       });
     }
-  }
-
-  private onCatalogChanges(tree: TreeItem[]): void {
-    this.dataChange.next(tree);
-    this.catalogChanges.emit(tree);
   }
 }

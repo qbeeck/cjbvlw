@@ -9,23 +9,10 @@
     matTreeNodePadding
   >
     <button mat-icon-button disabled></button>
-    <span
-      class="checklist-leaf-node"
-      [ngClass]="{
-        'drop-above':
-          dragNodeExpandOverArea === 'above' && dragNodeExpandOverNode === node,
-        'drop-below':
-          dragNodeExpandOverArea === 'below' && dragNodeExpandOverNode === node,
-        'drop-center':
-          dragNodeExpandOverArea === 'center' && dragNodeExpandOverNode === node
-      }"
-      draggable="true"
-      (dragstart)="handleDragStart(node)"
-      (dragover)="handleDragOver($event, node)"
-      (drop)="handleDrop($event, node)"
-      (dragend)="handleDragEnd()"
-      >{{ node.name }}</span
-    >
+    <ng-container
+      [ngTemplateOutlet]="item"
+      [ngTemplateOutletContext]="{ $implicit: node }"
+    ></ng-container>
   </mat-tree-node>
 
   <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
@@ -39,8 +26,16 @@
       </mat-icon>
     </button>
 
-    <span
-      [ngClass]="{
+    <ng-container
+      [ngTemplateOutlet]="item"
+      [ngTemplateOutletContext]="{ $implicit: node }"
+    ></ng-container>
+  </mat-tree-node>
+</mat-tree>
+
+<ng-template #item let-node>
+  <span
+    [ngClass]="{
         'drop-above':
           dragNodeExpandOverArea === 'above' && dragNodeExpandOverNode === node,
         'drop-below':
@@ -48,12 +43,11 @@
         'drop-center':
           dragNodeExpandOverArea === 'center' && dragNodeExpandOverNode === node
       }"
-      draggable="true"
-      (dragstart)="handleDragStart(node)"
-      (dragover)="handleDragOver($event, node)"
-      (drop)="handleDrop($event, node)"
-      (dragend)="handleDragEnd()"
-      >{{ node.name }}</span
-    >
-  </mat-tree-node>
-</mat-tree>
+    draggable="true"
+    (dragstart)="handleDragStart(node)"
+    (dragover)="handleDragOver($event, node)"
+    (drop)="handleDrop($event, node)"
+    (dragend)="handleDragEnd()"
+    >{{ node.name }} {{ node.order }}</span
+  >
+</ng-template>

@@ -22,13 +22,13 @@ export class AppComponent {
             {
               id: 159863,
               name: 'Product #2',
-              order: 2,
+              order: 1,
               frontType: 'product',
               children: [
                 {
                   id: 159864,
                   name: 'Subproduct #4',
-                  order: 3,
+                  order: 1,
                   frontType: 'subProduct',
                 },
               ],
@@ -36,7 +36,7 @@ export class AppComponent {
             {
               id: 159859,
               name: 'Product #1',
-              order: 1,
+              order: 2,
               frontType: 'product',
               children: [],
             },
@@ -45,13 +45,13 @@ export class AppComponent {
         {
           id: 159861,
           name: 'Product #2',
-          order: 1,
+          order: 2,
           frontType: 'product',
           children: [
             {
               id: 159862,
               name: 'asdas | Subproduct #1',
-              order: 2,
+              order: 1,
               frontType: 'subProduct',
             },
           ],
@@ -59,7 +59,7 @@ export class AppComponent {
         {
           id: 159860,
           name: 'Product #1',
-          order: 2,
+          order: 3,
           frontType: 'product',
           children: [],
         },
