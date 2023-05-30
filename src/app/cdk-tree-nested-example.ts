@@ -193,10 +193,6 @@ export class CdkTreeNestedExample {
     const newItem: TreeItem = { ...from, children: [] };
     parent.children.push(newItem);
 
-    parent.children.forEach((node, index) => {
-      node.order = index + 1;
-    });
-
     this.dataChange.next(this.data);
     return newItem;
   }
@@ -207,10 +203,6 @@ export class CdkTreeNestedExample {
 
     if (parentNode != null) {
       parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
-
-      parentNode.children.forEach((node, index) => {
-        node.order = index + 1;
-      });
     } else {
       this.data.splice(this.data.indexOf(node), 0, newItem);
     }
@@ -222,8 +214,6 @@ export class CdkTreeNestedExample {
   private insertItemBelow(node: TreeItem, from: TreeItem): TreeItem {
     const parentNode = this.getParentFromNodes(node);
     const newItem: TreeItem = { ...from, children: [] };
-    console.log(parentNode);
-
 
     if (parentNode != null) {
       parentNode.children.splice(
@@ -231,10 +221,6 @@ export class CdkTreeNestedExample {
         0,
         newItem
       );
-
-      parentNode.children.forEach((node, index) => {
-        node.order = index + 1;
-      });
     } else {
       this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
     }
