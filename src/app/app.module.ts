@@ -7,9 +7,10 @@ import {CdkTreeNestedExample} from './cdk-tree-nested-example';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatNativeDateModule} from '@angular/material/core';
 import {HttpClientModule} from '@angular/common/http';
+import { AppComponent } from './app.component';
 
 @NgModule({
-  declarations: [CdkTreeNestedExample],
+  declarations: [AppComponent, CdkTreeNestedExample],
   imports: [
     BrowserAnimationsModule,
     BrowserModule,
@@ -20,6 +21,6 @@ import {HttpClientModule} from '@angular/common/http';
     ReactiveFormsModule,
   ],
   providers: [],
-  bootstrap: [CdkTreeNestedExample],
+  bootstrap: [AppComponent],
 })
 export class AppModule {}

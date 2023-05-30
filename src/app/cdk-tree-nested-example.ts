@@ -1,303 +1,86 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, Injectable, ElementRef, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import {
   MatTreeFlatDataSource,
   MatTreeFlattener,
 } from '@angular/material/tree';
 import { BehaviorSubject } from 'rxjs';
 
-export class Category {
-  children: Category[];
-  name: string;
-  frontType: string;
-  order: number;
-}
-
-export class CategoryFlatNode {
-  name: string;
-  level: number;
-  expandable: boolean;
-  frontType: string;
-  order: number;
-}
-
-/**
- * Checklist database, it can build a tree structured Json object.
- * Each node in Json object represents a to-do item or a category.
- * If a node is a category, it has children items and new items can be added under the category.
- */
-@Injectable()
-export class ChecklistDatabase {
-  dataChange = new BehaviorSubject<Category[]>([]);
-
-  get data(): Category[] {
-    return this.dataChange.value;
-  }
-
-  constructor() {
-    const data = [
-      {
-        id: 15461,
-        name: 'Sushi | Category',
-        order: 1,
-        frontType: 'category',
-        children: [
-          {
-            id: 15462,
-            name: 'Nori | Subcategory',
-            order: 1,
-            frontType: 'subCategory',
-            children: [
-              {
-                id: 159863,
-                name: 'Product #2',
-                order: 2,
-                frontType: 'product',
-                children: [
-                  {
-                    id: 159864,
-                    name: 'Subproduct #4',
-                    order: 3,
-                    frontType: 'subProduct',
-                  },
-                ],
-              },
-              {
-                id: 159859,
-                name: 'Product #1',
-                order: 1,
-                frontType: 'product',
-                children: [],
-              },
-            ],
-          },
-          {
-            id: 159861,
-            name: 'Product #2',
-            order: 1,
-            frontType: 'product',
-            children: [
-              {
-                id: 159862,
-                name: 'asdas | Subproduct #1',
-                order: 2,
-                frontType: 'subProduct',
-              },
-            ],
-          },
-          {
-            id: 159860,
-            name: 'Product #1',
-            order: 2,
-            frontType: 'product',
-            children: [],
-          },
-        ],
-      },
-    ];
-
-    this.dataChange.next(data as any);
-  }
-
-  /** Add an item to to-do list */
-  insertItem(parent: Category, name: string): Category {
-    if (!parent.children) {
-      parent.children = [];
-    }
-    const newItem = { name } as Category;
-    parent.children.push(newItem);
-    this.dataChange.next(this.data);
-    return newItem;
-  }
-
-  insertItemAbove(node: Category, name: string): Category {
-    const parentNode = this.getParentFromNodes(node);
-    const newItem = { name } as Category;
-    if (parentNode != null) {
-      parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
-    } else {
-      this.data.splice(this.data.indexOf(node), 0, newItem);
-    }
-    this.dataChange.next(this.data);
-    return newItem;
-  }
-
-  insertItemBelow(node: Category, name: string): Category {
-    const parentNode = this.getParentFromNodes(node);
-    const newItem = { name } as Category;
-    if (parentNode != null) {
-      parentNode.children.splice(
-        parentNode.children.indexOf(node) + 1,
-        0,
-        newItem
-      );
-    } else {
-      this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
-    }
-    this.dataChange.next(this.data);
-    return newItem;
-  }
-
-  getParentFromNodes(node: Category): Category | null {
-    for (let i = 0; i < this.data.length; ++i) {
-      const currentRoot = this.data[i];
-      const parent = this.getParent(currentRoot, node);
-      if (parent != null) {
-        return parent;
-      }
-    }
-    return null;
-  }
-
-  getParent(currentRoot: Category, node: Category): Category | null {
-    if (currentRoot.children && currentRoot.children.length > 0) {
-      for (let i = 0; i < currentRoot.children.length; ++i) {
-        const child = currentRoot.children[i];
-        if (child === node) {
-          return currentRoot;
-        } else if (child.children && child.children.length > 0) {
-          const parent = this.getParent(child, node);
-          if (parent != null) {
-            return parent;
-          }
-        }
-      }
-    }
-
-    return null;
-  }
-
-  deleteItem(node: Category) {
-    this.deleteNode(this.data, node);
-    this.dataChange.next(this.data);
-  }
-
-  copyPasteItem(from: Category, to: Category): Category {
-    const newItem = this.insertItem(to, from.name);
-    if (from.children) {
-      from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
-      });
-    }
-    return newItem;
-  }
-
-  copyPasteItemAbove(from: Category, to: Category): Category {
-    const newItem = this.insertItemAbove(to, from.name);
-    if (from.children) {
-      from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
-      });
-    }
-    return newItem;
-  }
-
-  copyPasteItemBelow(from: Category, to: Category): Category {
-    const newItem = this.insertItemBelow(to, from.name);
-    if (from.children) {
-      from.children.forEach((child) => {
-        this.copyPasteItem(child, newItem);
-      });
-    }
-    return newItem;
-  }
-
-  deleteNode(nodes: Category[], nodeToDelete: Category) {
-    const index = nodes.indexOf(nodeToDelete, 0);
-    if (index > -1) {
-      nodes.splice(index, 1);
-    } else {
-      nodes.forEach((node) => {
-        if (node.children && node.children.length > 0) {
-          this.deleteNode(node.children, nodeToDelete);
-        }
-      });
-    }
-  }
-}
+import { TreeItem, TreeItemFlatNode } from './interfaces';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-tree',
   templateUrl: './cdk-tree-nested-example.html',
   styleUrls: ['./cdk-tree-nested-example.css'],
-  providers: [ChecklistDatabase],
 })
 export class CdkTreeNestedExample {
-  /** Map from flat node to nested node. This helps us finding the nested node to be modified */
-  flatNodeMap = new Map<CategoryFlatNode, Category>();
+  @Input() catalog: TreeItem[];
 
-  /** Map from nested node to flattened node. This helps us to keep the same object for selection */
-  nestedNodeMap = new Map<Category, CategoryFlatNode>();
+  @Output() readonly catalogChanges = new EventEmitter<TreeItem[]>();
 
-  treeControl: FlatTreeControl<CategoryFlatNode>;
+  private readonly flatNodeMap = new Map<TreeItemFlatNode, TreeItem>();
 
-  treeFlattener: MatTreeFlattener<Category, CategoryFlatNode>;
+  private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
+  private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
 
-  dataSource: MatTreeFlatDataSource<Category, CategoryFlatNode>;
+  protected treeControl = new FlatTreeControl<TreeItemFlatNode>(
+    (node) => node.level,
+    (node) => node.expandable
+  );
+
+  protected treeFlattener = new MatTreeFlattener<TreeItem, TreeItemFlatNode>(
+    (node, level) => {
+      const existingNode = this.nestedNodeMap.get(node);
+
+      const flatNode =
+        existingNode && existingNode.name === node.name
+          ? existingNode
+          : new TreeItemFlatNode();
+      flatNode.name = node.name;
+      flatNode.level = level;
+      flatNode.expandable = node.children && node.children.length > 0;
+      flatNode.frontType = node.frontType;
+
+      this.flatNodeMap.set(flatNode, node);
+      this.nestedNodeMap.set(node, flatNode);
+
+      return flatNode;
+    },
+    (node) => node.level,
+    (node) => node.expandable,
+    (node) => node.children
+  );
+
+  protected dataSource = new MatTreeFlatDataSource(
+    this.treeControl,
+    this.treeFlattener
+  );
   /* Drag and drop */
-  dragNode: any;
-  dragNodeExpandOverWaitTimeMs = 300;
-  dragNodeExpandOverNode: any;
-  dragNodeExpandOverTime: number;
-  dragNodeExpandOverArea: string;
-  @ViewChild('emptyItem') emptyItem: ElementRef;
+  protected dragNode: any;
+  protected dragNodeExpandOverWaitTimeMs = 300;
+  protected dragNodeExpandOverNode: any;
+  protected dragNodeExpandOverTime: number;
+  protected dragNodeExpandOverArea: string;
 
-  constructor(private database: ChecklistDatabase) {
-    this.treeFlattener = new MatTreeFlattener(
-      this.transformer,
-      this.getLevel,
-      this.isExpandable,
-      this.getChildren
-    );
-    this.treeControl = new FlatTreeControl<CategoryFlatNode>(
-      this.getLevel,
-      this.isExpandable
-    );
-    this.dataSource = new MatTreeFlatDataSource(
-      this.treeControl,
-      this.treeFlattener
-    );
+  ngOnInit(): void {
+    this.dataChange.next(this.catalog);
 
-    database.dataChange.subscribe((data) => {
-      this.dataSource.data = [];
+    this.dataChange.subscribe((data) => {
       this.dataSource.data = data;
+
       this.treeControl.expandAll();
     });
   }
 
-  getLevel = (node: CategoryFlatNode) => node.level;
+  protected hasChild = (_: number, _nodeData: TreeItemFlatNode) =>
+    _nodeData.expandable;
 
-  isExpandable = (node: CategoryFlatNode) => node.expandable;
-
-  getChildren = (node: Category): Category[] => node.children;
-
-  hasChild = (_: number, _nodeData: CategoryFlatNode) => _nodeData.expandable;
-
-  /**
-   * Transformer to convert nested node to flat node. Record the nodes in maps for later use.
-   */
-  transformer = (node: Category, level: number) => {
-    console.log(node, level);
-    const existingNode = this.nestedNodeMap.get(node);
-    const flatNode =
-      existingNode && existingNode.name === node.name
-        ? existingNode
-        : new CategoryFlatNode();
-    flatNode.name = node.name;
-    flatNode.level = level;
-    flatNode.expandable = node.children && node.children.length > 0;
-    flatNode.frontType = node.frontType;
-    this.flatNodeMap.set(flatNode, node);
-    this.nestedNodeMap.set(node, flatNode);
-    return flatNode;
-  };
-
-  handleDragStart(event: any, node: any) {
+  protected handleDragStart(event: any, node: any) {
     this.dragNode = node;
     this.treeControl.collapse(node);
   }
 
-  handleDragOver(event: any, node: any) {
+  protected handleDragOver(event: any, node: any) {
     event.preventDefault();
 
     // Handle node expand
@@ -326,29 +109,29 @@ export class CdkTreeNestedExample {
     }
   }
 
-  handleDrop(event: any, node: any) {
+  protected handleDrop(event: any, node: any) {
     event.preventDefault();
 
     console.log(node, this.dragNodeExpandOverArea);
     if (node !== this.dragNode) {
-      let newItem: Category;
+      let newItem: TreeItem;
       if (this.dragNodeExpandOverArea === 'above') {
-        newItem = this.database.copyPasteItemAbove(
+        newItem = this.copyPasteItemAbove(
           this.flatNodeMap.get(this.dragNode) as any,
           this.flatNodeMap.get(node) as any
         );
       } else if (this.dragNodeExpandOverArea === 'below') {
-        newItem = this.database.copyPasteItemBelow(
+        newItem = this.copyPasteItemBelow(
           this.flatNodeMap.get(this.dragNode) as any,
           this.flatNodeMap.get(node) as any
         );
       } else {
-        newItem = this.database.copyPasteItem(
+        newItem = this.copyPasteItem(
           this.flatNodeMap.get(this.dragNode) as any,
           this.flatNodeMap.get(node) as any
         );
       }
-      this.database.deleteItem(this.flatNodeMap.get(this.dragNode) as any);
+      this.deleteItem(this.flatNodeMap.get(this.dragNode) as any);
       this.treeControl.expandDescendants(
         this.nestedNodeMap.get(newItem) as any
       );
@@ -359,9 +142,128 @@ export class CdkTreeNestedExample {
     this.dragNodeExpandOverTime = 0;
   }
 
-  handleDragEnd() {
+  protected handleDragEnd() {
     this.dragNode = null;
     this.dragNodeExpandOverNode = null;
     this.dragNodeExpandOverTime = 0;
+  }
+
+  private get data(): TreeItem[] {
+    return this.dataChange.value;
+  }
+
+  private insertItem(parent: TreeItem, name: string): TreeItem {
+    if (!parent.children) {
+      parent.children = [];
+    }
+    const newItem = { name } as TreeItem;
+    parent.children.push(newItem);
+    this.dataChange.next(this.data);
+    return newItem;
+  }
+
+  private insertItemAbove(node: TreeItem, name: string): TreeItem {
+    const parentNode = this.getParentFromNodes(node);
+    const newItem = { name } as TreeItem;
+    if (parentNode != null) {
+      parentNode.children.splice(parentNode.children.indexOf(node), 0, newItem);
+    } else {
+      this.data.splice(this.data.indexOf(node), 0, newItem);
+    }
+    this.dataChange.next(this.data);
+    return newItem;
+  }
+
+  private insertItemBelow(node: TreeItem, name: string): TreeItem {
+    const parentNode = this.getParentFromNodes(node);
+    const newItem = { name } as TreeItem;
+    if (parentNode != null) {
+      parentNode.children.splice(
+        parentNode.children.indexOf(node) + 1,
+        0,
+        newItem
+      );
+    } else {
+      this.data.splice(this.data.indexOf(node) + 1, 0, newItem);
+    }
+    this.dataChange.next(this.data);
+    return newItem;
+  }
+
+  private getParentFromNodes(node: TreeItem): TreeItem | null {
+    for (let i = 0; i < this.data.length; ++i) {
+      const currentRoot = this.data[i];
+      const parent = this.getParent(currentRoot, node);
+      if (parent != null) {
+        return parent;
+      }
+    }
+    return null;
+  }
+
+  private getParent(currentRoot: TreeItem, node: TreeItem): TreeItem | null {
+    if (currentRoot.children && currentRoot.children.length > 0) {
+      for (let i = 0; i < currentRoot.children.length; ++i) {
+        const child = currentRoot.children[i];
+        if (child === node) {
+          return currentRoot;
+        } else if (child.children && child.children.length > 0) {
+          const parent = this.getParent(child, node);
+          if (parent != null) {
+            return parent;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private deleteItem(node: TreeItem) {
+    this.deleteNode(this.data, node);
+    this.dataChange.next(this.data);
+  }
+
+  private copyPasteItem(from: TreeItem, to: TreeItem): TreeItem {
+    const newItem = this.insertItem(to, from.name);
+    if (from.children) {
+      from.children.forEach((child) => {
+        this.copyPasteItem(child, newItem);
+      });
+    }
+    return newItem;
+  }
+
+  private copyPasteItemAbove(from: TreeItem, to: TreeItem): TreeItem {
+    const newItem = this.insertItemAbove(to, from.name);
+    if (from.children) {
+      from.children.forEach((child) => {
+        this.copyPasteItem(child, newItem);
+      });
+    }
+    return newItem;
+  }
+
+  private copyPasteItemBelow(from: TreeItem, to: TreeItem): TreeItem {
+    const newItem = this.insertItemBelow(to, from.name);
+    if (from.children) {
+      from.children.forEach((child) => {
+        this.copyPasteItem(child, newItem);
+      });
+    }
+    return newItem;
+  }
+
+  private deleteNode(nodes: TreeItem[], nodeToDelete: TreeItem) {
+    const index = nodes.indexOf(nodeToDelete, 0);
+    if (index > -1) {
+      nodes.splice(index, 1);
+    } else {
+      nodes.forEach((node) => {
+        if (node.children && node.children.length > 0) {
+          this.deleteNode(node.children, nodeToDelete);
+        }
+      });
+    }
   }
 }
