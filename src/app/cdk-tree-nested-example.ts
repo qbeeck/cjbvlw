@@ -23,17 +23,20 @@ export class CdkTreeNestedExample {
   private readonly flatNodeMap = new Map<TreeItemFlatNode, TreeItem>();
   private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
   private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
-  protected dragNode: any;
+  protected dragNode: TreeItemFlatNode | null = null;
   protected readonly dragNodeExpandOverWaitTimeMs = 300;
   protected dragNodeExpandOverNode: TreeItemFlatNode | null;
   protected dragNodeExpandOverTime: number;
   protected dragNodeExpandOverArea: DragNodePosition;
 
-  protected treeControl = new FlatTreeControl<TreeItemFlatNode>(
+  protected readonly treeControl = new FlatTreeControl<TreeItemFlatNode>(
     (node) => node.level,
     (node) => node.expandable
   );
-  protected treeFlattener = new MatTreeFlattener<TreeItem, TreeItemFlatNode>(
+  protected readonly treeFlattener = new MatTreeFlattener<
+    TreeItem,
+    TreeItemFlatNode
+  >(
     (node, level) => {
       const existingNode = this.nestedNodeMap.get(node);
 
@@ -56,14 +59,13 @@ export class CdkTreeNestedExample {
     (node) => node.children
   );
 
-  protected dataSource = new MatTreeFlatDataSource(
+  protected readonly dataSource = new MatTreeFlatDataSource(
     this.treeControl,
     this.treeFlattener
   );
 
-  protected hasChild = (_: number, _nodeData: TreeItemFlatNode) =>
-    _nodeData.expandable;
-  /* Drag and drop */
+  protected readonly hasChild = (_: number, node: TreeItemFlatNode) =>
+    node.expandable;
 
   private readonly _destroy$ = new Subject<void>();
 
@@ -71,6 +73,7 @@ export class CdkTreeNestedExample {
     this.dataChange.next(this.catalog);
 
     this.dataChange.pipe(takeUntil(this._destroy$)).subscribe((data) => {
+      this.dataSource.data = [];
       this.dataSource.data = data;
 
       this.treeControl.expandAll();
@@ -127,7 +130,7 @@ export class CdkTreeNestedExample {
   protected handleDrop(event: DragEvent, node: TreeItemFlatNode) {
     event.preventDefault();
 
-    if (node !== this.dragNode) {
+    if (this.dragNode && node !== this.dragNode) {
       let newItem: TreeItem;
 
       const from = this.flatNodeMap.get(this.dragNode) as TreeItem;
