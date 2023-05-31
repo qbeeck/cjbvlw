@@ -76,7 +76,7 @@ export class CdkTreeNestedExample {
   private readonly nestedNodeMap = new Map<TreeItem, TreeItemFlatNode>();
   private readonly dataChange = new BehaviorSubject<TreeItem[]>([]);
   private dragNode: TreeItemFlatNode | null = null;
-  private readonly dragNodeExpandOverWaitTimeMs = 300;
+  private readonly dragNodeExpandOverWaitTimeMs = 500;
   private dragNodeExpandOverTime: number;
 
   private readonly _destroy$ = new Subject<void>();
@@ -152,13 +152,25 @@ export class CdkTreeNestedExample {
     // category -> subProduct = not allow
     // product -> subProduct = not allow
 
+    // проверка на то, что переносимая нода не является той же самой, куда хотят перенсти ноду
+    if (this.dragNode && node !== this.dragNode) {
+      const nodeFrontType = node.frontType;
+      const dragNodeFrontType = this.dragNode.frontType;
+
+      if (
+        this.dragNodeExpandOverArea === 'above' &&
+        nodeFrontType === dragNodeFrontType
+      ) {
+      }
+    }
+
+    console.log(this.dragNode, node);
+
     if (this.dragNode && node !== this.dragNode) {
       let newItem: TreeItem;
 
-      const from = this.flatNodeMap.get(this.dragNode);
-      const to = this.flatNodeMap.get(node);
-
-      if (!from || !to) return;
+      const from = this.flatNodeMap.get(this.dragNode) as TreeItem;
+      const to = this.flatNodeMap.get(node) as TreeItem;
 
       switch (this.dragNodeExpandOverArea) {
         case 'above':
@@ -242,8 +254,7 @@ export class CdkTreeNestedExample {
   }
 
   private getParentFromNodes(node: TreeItem): TreeItem | null {
-    for (let i = 0; i < this.data.length; ++i) {
-      const currentRoot = this.data[i];
+    for (const currentRoot of this.data) {
       const parent = this.getParent(currentRoot, node);
 
       if (parent != null) return parent;
@@ -256,9 +267,7 @@ export class CdkTreeNestedExample {
     const currentRootChildren = currentRoot.children;
 
     if (currentRootChildren && currentRootChildren.length > 0) {
-      for (let i = 0; i < currentRootChildren.length; ++i) {
-        const children = currentRootChildren[i];
-
+      for (const children of currentRootChildren) {
         if (children === node) return currentRoot;
 
         if (children.children && children.children.length > 0) {
@@ -305,7 +314,7 @@ export class CdkTreeNestedExample {
   }
 
   private deleteNode(nodes: TreeItem[], nodeToDelete: TreeItem) {
-    const index = nodes.indexOf(nodeToDelete, 0);
+    const index = nodes.indexOf(nodeToDelete);
 
     if (index > -1) {
       nodes.splice(index, 1);
